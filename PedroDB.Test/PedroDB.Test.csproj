@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PedroEngine\PedroEngine.csproj" />
+    <ProjectReference Include="..\PedroEngine\PedroDB.Engine.csproj" />
   </ItemGroup>
 
 </Project>
