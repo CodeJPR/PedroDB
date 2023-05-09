@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PedroDB;
+
 public class PedroEngine {
 
 	private EngineConfiguration config;
@@ -18,7 +19,9 @@ public class PedroEngine {
 		Init();
 	}
 
-	private void Init() {
+    #region Private Methods
+
+    private void Init() {
 		if(!Directory.Exists(config.DatabasePath)) {
 			bool result = Create();
 			if(!result) {
@@ -63,19 +66,24 @@ public class PedroEngine {
     private DatabaseMeta ReadDBMeta(string db) {
 		char div = Path.DirectorySeparatorChar;
         string json = File.ReadAllText(config.DatabasePath+div+db+div+"data.meta");
-        DatabaseMeta? meta = JsonSerializer.Deserialize<DatabaseMeta>(json);
+		DatabaseMeta? meta = JsonSerializer.Deserialize<DatabaseMeta>(json, new JsonSerializerOptions() {
+			IncludeFields = true
+		});
         if (meta is null) {
             throw new InvalidOperationException("Failed to read database metadata");
         }
         return meta;
     }
 
-    private void WriteDBMeta(string db, DatabaseMeta meta) {
+    private void WriteDBMeta(DatabaseMeta meta) {
 		char div = Path.DirectorySeparatorChar;
-        string json = JsonSerializer.Serialize(meta);
-        File.WriteAllText(config.DatabasePath+div+db+div+"data.meta", json);
+        string json = JsonSerializer.Serialize(meta, new JsonSerializerOptions() {
+			IncludeFields = true
+		});
+        File.WriteAllText(config.DatabasePath+div+meta.Name+div+"data.meta", json);
     }
 
+    #endregion
 
     #region Public Methods
 
@@ -104,25 +112,53 @@ public class PedroEngine {
 		if (name == "data.meta") {
 			throw new InvalidOperationException("Invalid database name");
 		}
-		if (Directory.Exists(name)) {
+		if (Directory.Exists( config.DatabasePath + div + name)) {
 			throw new InvalidOperationException("Database already exists");
 		}
 		var meta = ReadEngineMeta();
 		meta.Databases.Add(name);
 		WriteEngineMeta(meta);
 		Directory.CreateDirectory(config.DatabasePath + div + name);
-		DatabaseMeta dbMeta = new();
-		WriteDBMeta(name, dbMeta);
+		DatabaseMeta dbMeta = new() {
+			Name = name,
+			Collections = new(),
+			Path = config.DatabasePath + div + name
+		};
+		WriteDBMeta(dbMeta);
 	}
 
+	public void RemoveDatabase(string name) {
+        char div = Path.DirectorySeparatorChar;
+        if (name == "data.meta") {
+            throw new InvalidOperationException("Invalid database name");
+        }
+        if (!Directory.Exists(config.DatabasePath + div + name)) {
+            throw new InvalidOperationException("Database does not exist");
+        }
+		var meta = ReadEngineMeta();
+		meta.Databases.Remove(name);
+		WriteEngineMeta(meta);
+		Directory.Delete(config.DatabasePath + div + name, true);
+    }
+
+	public Database? GetDatabase(string name) {
+		char div = Path.DirectorySeparatorChar;
+        if (name == "data.meta") {
+            throw new InvalidOperationException("Invalid database name");
+        }
+        if (!Directory.Exists(config.DatabasePath + div + name)) {
+            throw new InvalidOperationException("Database does not exist");
+        }
+
+		var meta = ReadDBMeta(name);
+		Database db = new(meta);
+		return db;
+	}
 
     #endregion
+
     class EngineMeta {
 		public List<string> Databases { get; set; } = new();
 		public List<User> Users { get; set; } = new();
-	}
-
-	class DatabaseMeta {
-		public List<string> Collections = new();
 	}
 }
