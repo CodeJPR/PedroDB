@@ -32,4 +32,8 @@ public class User {
                Username == user.Username &&
                PasswordHash == user.PasswordHash;
     }
+
+    public override int GetHashCode() {
+        return HashCode.Combine(Username, PasswordHash);
+    }
 }

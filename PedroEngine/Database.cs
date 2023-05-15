@@ -8,27 +8,14 @@ using System.Threading.Tasks;
 namespace PedroDB; 
 public class Database {
 
-    private string name;
-    private string path;
-    private List<string> collections;
+    private readonly string name;
+    private readonly string path;
+    private readonly List<string> collections;
 
-    public Database(DatabaseMeta meta) {
+    internal Database(DatabaseMeta meta) {
         name = meta.Name;
         path = meta.Path;
         collections = meta.Collections;
-    }
-    
-    // yes duplicated code because fuck it
-    private DatabaseMeta ReadDBMeta() {
-        char div = Path.DirectorySeparatorChar;
-        string json = File.ReadAllText(path + div + name + div + "data.meta");
-        DatabaseMeta? meta = JsonSerializer.Deserialize<DatabaseMeta>(json, new JsonSerializerOptions() {
-            IncludeFields = true
-        });
-        if (meta is null) {
-            throw new InvalidOperationException("Failed to read database metadata");
-        }
-        return meta;
     }
 
     private void WriteDBMeta() {
@@ -44,8 +31,17 @@ public class Database {
         File.WriteAllText(path + div + "data.meta", json);
     }
 
+    /// <summary>
+    /// Returns a read-only list of the existing collections
+    /// </summary>
     public IReadOnlyCollection<string> Collections => collections.AsReadOnly();
 
+    /// <summary>
+    /// Creates a new collection.
+    /// </summary>
+    /// <param name="name">The name of the collection</param>
+    /// <exception cref="InvalidOperationException">If the collection already exists or 
+    /// an invalid name is provided</exception>
     public void AddCollection(string name) {
         char div = Path.DirectorySeparatorChar;
         if(name == "data.meta") {
@@ -60,19 +56,56 @@ public class Database {
         WriteDBMeta();
     }
 
-    public void RemoveCollection(string name) {
-        collections.Remove(name);
-        WriteDBMeta();
+    /// <summary>
+    /// Creates and returns a new collection.
+    /// </summary>
+    /// <typeparam name="T">The underlying type of the data</typeparam>
+    /// <param name="name">The name of the collection to be created</param>
+    /// <returns>The object representing the collection</returns>
+    public Collection<T> AddCollection<T>(string name) {
+        AddCollection(name);
+        return GetCollection<T>(name, false);
     }
 
-    public Collection<T> GetCollection<T>(string name) {
+    /// <summary>
+    /// Removes a collection from the database.
+    /// </summary>
+    /// <param name="name">The name of the collection that will be deleted</param>
+    /// <param name="softDelete"><see langword="true"/> to keep the collection file, 
+    /// <see langword="false"/> to delete the file</param>
+    public void RemoveCollection(string name, bool softDelete = true) {
+        collections.Remove(name);
+        WriteDBMeta();
+        if(!softDelete) {
+            char div = Path.DirectorySeparatorChar;
+            File.Delete(path+div+name+".json");
+        }
+    }
+
+    /// <summary>
+    /// Returns the collection with the given name and type. 
+    /// If the type <typeparamref name="T"/> does not match the type of the collection, 
+    /// an exception will be thrown.
+    /// </summary>
+    /// <typeparam name="T">The type of the underlying data</typeparam>
+    /// <param name="name">The name of the collection</param>
+    /// <param name="create"><see langword="true"/> to create a new collection if it doesn't exist</param>
+    /// <returns>The object used to control the collection</returns>
+    public Collection<T> GetCollection<T>(string name, bool create = false) {
+        if(!collections.Contains(name)) {
+            if(create) {
+                AddCollection(name);
+            } else {
+                throw new InvalidOperationException("Collection does not exist");
+            }
+        }
         char div = Path.DirectorySeparatorChar;
         return new Collection<T>(path+div+name+".json");
     }
 }
 
 public class DatabaseMeta {
-    public string Name;
-    public List<string> Collections = new();
-    public string Path;
+    public string Name { get; set; } = "";
+    public List<string> Collections { get; set; } = new();
+    public string Path { get; set; } = "";
 }

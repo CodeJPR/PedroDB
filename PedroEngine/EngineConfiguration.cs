@@ -5,8 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PedroDB;
-public readonly struct EngineConfiguration {
-    public required string DatabasePath { get; init; }
-
-
+public class EngineConfiguration {
+    public string DatabasePath { get; init; } = "";
 }

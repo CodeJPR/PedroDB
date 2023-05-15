@@ -12,7 +12,7 @@ namespace PedroDB;
 
 public class PedroEngine {
 
-	private EngineConfiguration config;
+	private readonly EngineConfiguration config;
 
 	public PedroEngine(EngineConfiguration configuration) {
 		config = configuration;
@@ -87,6 +87,12 @@ public class PedroEngine {
 
     #region Public Methods
 
+	/// <summary>
+	/// Creates a new user. Not in use
+	/// </summary>
+	/// <param name="username"></param>
+	/// <param name="password"></param>
+	/// <returns></returns>
     public bool AddUser(string username, string password) {
         EngineMeta meta = ReadEngineMeta();
         if (meta.Users.Any(u => u.Username == username)) {
@@ -97,6 +103,11 @@ public class PedroEngine {
         return true;
     }
 
+	/// <summary>
+	/// Removes an user. Not in use
+	/// </summary>
+	/// <param name="username"></param>
+	/// <returns></returns>
     public bool RemoveUser(string username) {
         EngineMeta meta = ReadEngineMeta();
         if (!meta.Users.Any(u => u.Username == username)) {
@@ -107,7 +118,19 @@ public class PedroEngine {
         return true;
     }
 
-	public void AddDatabase(string name) {
+	/// <summary>
+	/// Returns a read-only list of all existing databases.
+	/// </summary>
+	public IReadOnlyCollection<string> Databases => ReadEngineMeta().Databases.AsReadOnly();
+
+    /// <summary>
+    /// Creates and returns a new database.
+    /// </summary>
+    /// <param name="name">The name of the database</param>
+    /// <returns>A <see cref="Database"/> object</returns>
+    /// <exception cref="InvalidOperationException">If the database already exists or an
+	/// invalid name was provided</exception>
+    public Database AddDatabase(string name) {
 		char div = Path.DirectorySeparatorChar;
 		if (name == "data.meta") {
 			throw new InvalidOperationException("Invalid database name");
@@ -125,8 +148,16 @@ public class PedroEngine {
 			Path = config.DatabasePath + div + name
 		};
 		WriteDBMeta(dbMeta);
+
+		return GetDatabase(name) ?? throw new InvalidOperationException("Failed to create database");
 	}
 
+	/// <summary>
+	/// Deletes a database and all its contents.
+	/// </summary>
+	/// <param name="name">The name of the database</param>
+	/// <exception cref="InvalidOperationException">If the database has an illegal name or
+	/// the database doesn't exists</exception>
 	public void RemoveDatabase(string name) {
         char div = Path.DirectorySeparatorChar;
         if (name == "data.meta") {
@@ -141,7 +172,13 @@ public class PedroEngine {
 		Directory.Delete(config.DatabasePath + div + name, true);
     }
 
-	public Database? GetDatabase(string name) {
+	/// <summary>
+	/// Returns a database
+	/// </summary>
+	/// <param name="name"></param>
+	/// <returns></returns>
+	/// <exception cref="InvalidOperationException"></exception>
+	public Database GetDatabase(string name) {
 		char div = Path.DirectorySeparatorChar;
         if (name == "data.meta") {
             throw new InvalidOperationException("Invalid database name");
