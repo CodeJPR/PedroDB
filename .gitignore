@@ -3,3 +3,4 @@ bin/
 obj/
 sonar.bat
 .sonarqube/
+PedroConsole/
