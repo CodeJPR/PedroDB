@@ -17,6 +17,7 @@
     <RepositoryUrl>https://github.com/CodeJPR/PedroDB</RepositoryUrl>
     <PackageTags>database; pedro; db; lightweight; nosql;</PackageTags>
     <PackageLicenseExpression> MIT</PackageLicenseExpression>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
