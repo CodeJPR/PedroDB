@@ -102,6 +102,9 @@ public class Database {
         char div = Path.DirectorySeparatorChar;
         return new Collection<T>(path+div+name+".json");
     }
+
+    public bool HasCollection(string name)
+        => collections.Contains(name);
 }
 
 public class DatabaseMeta {

@@ -192,6 +192,11 @@ public class PedroEngine {
 		return db;
 	}
 
+	public bool HasDatabase(string name) {
+        var meta = ReadDBMeta(name);
+		return meta.Collections.Any(c => c == name);
+    }
+
     #endregion
 
     class EngineMeta {
